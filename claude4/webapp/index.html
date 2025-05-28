@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24点游戏求解器</title>
+    <!-- 您可以替换为本地的Vue.js文件或其他CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .number-input {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #ddd;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .number-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            transform: scale(1.05);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .result-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 15px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .result-success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            animation: slideIn 0.5s ease;
+        }
+
+        .result-error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+            animation: slideIn 0.5s ease;
+        }
+
+        .result-waiting {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px dashed #ddd;
+        }
+
+        .result-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .examples-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+        }
+
+        .examples-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .example-item {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .example-item:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .number-input {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+            border: 1px solid #ffcdd2;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1 class="title">24点游戏求解器</h1>
+            
+            <div v-if="vueError" class="error-message">
+                Vue.js 加载失败，请检查网络连接或使用本地Vue.js文件
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <input 
+                        v-for="(num, index) in numbers" 
+                        :key="index"
+                        v-model.number="numbers[index]"
+                        type="number"
+                        class="number-input"
+                        :placeholder="(index + 1).toString()"
+                        min="1"
+                        max="13"
+                        @keyup.enter="solve"
+                    >
+                </div>
+                
+                <div class="button-group">
+                    <button @click="solve" class="btn btn-primary" :disabled="loading">
+                        <span v-if="loading" class="loading"></span>
+                        {{ loading ? '求解中...' : '求解' }}
+                    </button>
+                    <button @click="clear" class="btn btn-secondary">清空</button>
+                    <button @click="random" class="btn btn-secondary">随机</button>
+                </div>
+            </div>
+
+            <div class="result-section" :class="resultClass">
+                <div class="result-text">{{ resultText }}</div>
+            </div>
+
+            <div class="examples-section">
+                <div class="examples-title">试试这些例子</div>
+                <div class="examples-grid">
+                    <div 
+                        v-for="example in examples" 
+                        :key="example.join(',')"
+                        @click="useExample(example)"
+                        class="example-item"
+                    >
+                        {{ example.join(', ') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查Vue是否成功加载
+        if (typeof Vue === 'undefined') {
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="error-message">
+                        <h2>Vue.js 加载失败</h2>
+                        <p>请检查网络连接，或下载Vue.js到本地使用</p>
+                        <p>您可以从 <a href="https://unpkg.com/vue@3/dist/vue.global.js" target="_blank">这里</a> 下载Vue.js文件</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            const { createApp, ref, computed } = Vue;
+
+            createApp({
+                setup() {
+                    const numbers = ref([null, null, null, null]);
+                    const result = ref(null);
+                    const loading = ref(false);
+                    const vueError = ref(false);
+                    
+                    const examples = [
+                        [1, 1, 8, 8],
+                        [4, 1, 8, 7],
+                        [1, 2, 3, 4],
+                        [3, 3, 8, 8],
+                        [5, 5, 5, 1],
+                        [2, 2, 10, 10]
+                    ];
+
+                    const resultClass = computed(() => {
+                        if (result.value === null) return 'result-waiting';
+                        return result.value === 'None' ? 'result-error' : 'result-success';
+                    });
+
+                    const resultText = computed(() => {
+                        if (result.value === null) {
+                            return '请输入4个数字（1-13），然后点击求解按钮';
+                        }
+                        if (result.value === 'None') {
+                            return '无解！这4个数字无法组成24点';
+                        }
+                        return `解：${result.value}`;
+                    });
+
+                    // 24点求解算法
+                    function solve24(nums) {
+                        if (nums.length !== 4 || nums.some(n => n == null || n < 1 || n > 13)) {
+                            return 'None';
+                        }
+
+                        const ops = ['+', '-', '*', '/'];
+                        const opFuncs = {
+                            '+': (a, b) => a + b,
+                            '-': (a, b) => a - b,
+                            '*': (a, b) => a * b,
+                            '/': (a, b) => b !== 0 ? a / b : NaN
+                        };
+
+                        // 获取所有排列
+                        function getPermutations(arr) {
+                            if (arr.length <= 1) return [arr];
+                            const result = [];
+                            for (let i = 0; i < arr.length; i++) {
+                                const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+                                const perms = getPermutations(rest);
+                                for (const perm of perms) {
+                                    result.push([arr[i], ...perm]);
+                                }
+                            }
+                            return result;
+                        }
+
+                        // 获取所有运算符组合
+                        function getOpCombinations() {
+                            const result = [];
+                            for (const op1 of ops) {
+                                for (const op2 of ops) {
+                                    for (const op3 of ops) {
+                                        result.push([op1, op2, op3]);
+                                    }
+                                }
+                            }
+                            return result;
+                        }
+
+                        const permutations = getPermutations(nums);
+                        const opCombinations = getOpCombinations();
+
+                        for (const perm of permutations) {
+                            const [a, b, c, d] = perm;
+                            
+                            for (const [op1, op2, op3] of opCombinations) {
+                                const expressions = [
+                                    {
+                                        calc: () => opFuncs[op3](opFuncs[op2](opFuncs[op1](a, b), c), d),
+                                        str: `((${a} ${op1} ${b}) ${op2} ${c}) ${op3} ${d}`
+                                    },
+                                    {
+                                        calc: () => opFuncs[op3](opFuncs[op1](a, opFuncs[op2](b, c)), d),
+                                        str: `(${a} ${op1} (${b} ${op2} ${c})) ${op3} ${d}`
+                                    },
+                                    {
+                                        calc: () => opFuncs[op2](opFuncs[op1](a, b), opFuncs[op3](c, d)),
+                                        str: `(${a} ${op1} ${b}) ${op2} (${c} ${op3} ${d})`
+                                    },
+                                    {
+                                        calc: () => opFuncs[op1](a, opFuncs[op3](opFuncs[op2](b, c), d)),
+                                        str: `${a} ${op1} ((${b} ${op2} ${c}) ${op3} ${d})`
+                                    },
+                                    {
+                                        calc: () => opFuncs[op1](a, opFuncs[op2](b, opFuncs[op3](c, d))),
+                                        str: `${a} ${op1} (${b} ${op2} (${c} ${op3} ${d}))`
+                                    }
+                                ];
+
+                                for (const expr of expressions) {
+                                    try {
+                                        const calcResult = expr.calc();
+                                        if (Math.abs(calcResult - 24) < 1e-9) {
+                                            return expr.str;
+                                        }
+                                    } catch (e) {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        return 'None';
+                    }
+
+                    async function solve() {
+                        if (numbers.value.some(n => n == null || n === '')) {
+                            alert('请输入4个数字');
+                            return;
+                        }
+
+                        loading.value = true;
+                        
+                        // 使用setTimeout来模拟异步计算，让UI有时间显示加载状态
+                        setTimeout(() => {
+                            try {
+                                result.value = solve24(numbers.value);
+                            } catch (error) {
+                                result.value = 'None';
+                                console.error('计算错误:', error);
+                            }
+                            loading.value = false;
+                        }, 100);
+                    }
+
+                    function clear() {
+                        numbers.value = [null, null, null, null];
+                        result.value = null;
+                    }
+
+                    function random() {
+                        numbers.value = Array.from({ length: 4 }, () => Math.floor(Math.random() * 13) + 1);
+                        result.value = null;
+                    }
+
+                    function useExample(example) {
+                        numbers.value = [...example];
+                        result.value = null;
+                    }
+
+                    return {
+                        numbers,
+                        result,
+                        loading,
+                        vueError,
+                        examples,
+                        resultClass,
+                        resultText,
+                        solve,
+                        clear,
+                        random,
+                        useExample
+                    };
+                }
+            }).mount('#app');
+        }
+    </script>
+</body>
+</html>
